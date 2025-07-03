@@ -6,7 +6,7 @@ end
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 
-local GLITCH_URL = "https://conscious-extreme-primula.glitch.me"
+local GLITCH_URL = "http://conscious-extreme-primula.glitch.me"
 local LINKVERTISE_URL = "https://link-hub.net/1054419/pfhjcPm4gZj2"
 
 -- GUI
@@ -102,13 +102,29 @@ submitBtn.MouseButton1Click:Connect(function()
     notify("🔍 Checking key...")
 
     local isValid = false
-    local success, result = pcall(function()
-        return tostring(game:HttpGet(GLITCH_URL .. "/check_code?code=" .. code))
+    local url = GLITCH_URL .. "/check_code?code=" .. code
+    print("[DEBUG] Checking URL:", url)
+    local httpSuccess, httpResult = pcall(function()
+        return tostring(game:HttpGet(url))
     end)
 
-    if success and typeof(result) == "string" then
-        result = result:lower():gsub("%s+", "")
-        if result == "valid" then
+    print("[DEBUG] pcall success:", httpSuccess)
+    print("[DEBUG] Raw key check result:", httpResult)
+
+    -- If result is nil, executor probably does not support HTTP(S)
+    if httpResult == nil or httpResult == "" then
+        notify("❌ Your executor does not support HTTP requests to external servers.")
+        return
+    end
+
+    if not httpSuccess then
+        notify("❌ Failed to check key: " .. tostring(httpResult))
+        return
+    end
+
+    if typeof(httpResult) == "string" then
+        local result = httpResult:lower():gsub("%s+", "")
+        if string.find(result, "valid", 1, true) then
             isValid = true
         end
     end
@@ -160,7 +176,8 @@ submitBtn.MouseButton1Click:Connect(function()
 
         s2.MouseButton1Click:Connect(function()
             picker:Destroy()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/NoLag-id/No-Lag-HUB/refs/heads/main/Loader/LoaderV1.lua"))()
+            loadstring(game:HttpGet(
+                "https://raw.githubusercontent.com/NoLag-id/No-Lag-HUB/refs/heads/main/Loader/LoaderV1.lua"))()
         end)
     else
         notify("❌ Invalid or Expired Key")
