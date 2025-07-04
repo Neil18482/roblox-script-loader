@@ -8,7 +8,7 @@ local TweenService = game:GetService("TweenService")
 
 local GLITCH_URL = "http://conscious-extreme-primula.glitch.me"
 local LINKVERTISE_URL = "https://link-hub.net/1054419/pfhjcPm4gZj2"
-local LOOTLABS_URL = "https://lootdest.org/s?3cxANNPS"
+local LOOTLABS_URL = "https://lootdest.org/s?XYP0BKme"
 
 -- Utility: Make a frame draggable by its top bar (label or frame)
 local function makeDraggable(dragFrame, mainFrame)
