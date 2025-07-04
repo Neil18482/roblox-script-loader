@@ -102,6 +102,7 @@ submitBtn.MouseButton1Click:Connect(function()
     notify("🔍 Checking key...")
 
     local isValid = false
+    local expiryTimestamp = nil
     local url = GLITCH_URL .. "/check_code?code=" .. code
     print("[DEBUG] Checking URL:", url)
     local httpSuccess, httpResult = pcall(function()
@@ -111,7 +112,6 @@ submitBtn.MouseButton1Click:Connect(function()
     print("[DEBUG] pcall success:", httpSuccess)
     print("[DEBUG] Raw key check result:", httpResult)
 
-    -- If result is nil, executor probably does not support HTTP(S)
     if httpResult == nil or httpResult == "" then
         notify("❌ Your executor does not support HTTP requests to external servers.")
         return
@@ -122,16 +122,79 @@ submitBtn.MouseButton1Click:Connect(function()
         return
     end
 
-    if typeof(httpResult) == "string" then
-        local result = httpResult:lower():gsub("%s+", "")
-        if string.find(result, "valid", 1, true) then
-            isValid = true
-        end
+    -- Parse JSON response
+    local ok, data = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(httpResult)
+    end)
+    if not ok or type(data) ~= "table" then
+        notify("❌ Invalid server response.")
+        return
     end
 
-    if isValid then
+    if data.status == "valid" and data.expires then
+        isValid = true
+        expiryTimestamp = tonumber(data.expires)
+    elseif data.status == "expired" then
+        notify("❌ Key Expired")
+        return
+    else
+        notify("❌ Invalid or Expired Key")
+        return
+    end
+
+    if isValid and expiryTimestamp then
         notify("✅ Valid Key")
         gui:Destroy()
+
+        -- Countdown Model
+        local countdownGui = Instance.new("ScreenGui", CoreGui)
+        countdownGui.Name = "KeyCountdownUI"
+        local countdownFrame = Instance.new("Frame", countdownGui)
+        countdownFrame.Size = UDim2.new(0, 180, 0, 60)
+        countdownFrame.Position = UDim2.new(1, -200, 0, 40)
+        countdownFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        countdownFrame.BackgroundTransparency = 0.2
+        countdownFrame.AnchorPoint = Vector2.new(0, 0)
+        local countdownCorner = Instance.new("UICorner", countdownFrame)
+        countdownCorner.CornerRadius = UDim.new(0, 10)
+        local countdownLabel = Instance.new("TextLabel", countdownFrame)
+        countdownLabel.Size = UDim2.new(1, 0, 1, 0)
+        countdownLabel.BackgroundTransparency = 1
+        countdownLabel.TextColor3 = Color3.new(1, 1, 1)
+        countdownLabel.Font = Enum.Font.GothamBold
+        countdownLabel.TextSize = 18
+        countdownLabel.Text = "Key Expires In: ..."
+
+        -- Countdown update loop
+        local run = true
+        task.spawn(function()
+            while run do
+                local now = os.time()
+                local remaining = expiryTimestamp - now
+                if remaining < 0 then
+                    remaining = 0
+                end
+                local h = math.floor(remaining / 3600)
+                local m = math.floor((remaining % 3600) / 60)
+                local s = remaining % 60
+                countdownLabel.Text = string.format("Key Expires In: %02d:%02d:%02d", h, m, s)
+                if remaining <= 0 then
+                    countdownLabel.Text = "Key Expired!"
+                    wait(1)
+                    run = false
+                    pcall(function()
+                        game:GetService("Players").LocalPlayer:Kick("Key expired.")
+                    end)
+                    if typeof(Draw) == "function" and typeof(Draw.Close) == "function" then
+                        Draw:Close()
+                    end
+                    if typeof(os.exit) == "function" then
+                        os.exit()
+                    end
+                end
+                wait(1)
+            end
+        end)
 
         -- Script Picker
         local picker = Instance.new("ScreenGui", CoreGui)
@@ -179,7 +242,5 @@ submitBtn.MouseButton1Click:Connect(function()
             loadstring(game:HttpGet(
                 "https://raw.githubusercontent.com/NoLag-id/No-Lag-HUB/refs/heads/main/Loader/LoaderV1.lua"))()
         end)
-    else
-        notify("❌ Invalid or Expired Key")
     end
 end)
