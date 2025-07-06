@@ -6,7 +6,7 @@ end
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 
-local GLITCH_URL = "http://conscious-extreme-primula.glitch.me"
+local GLITCH_URL = "https://conscious-extreme-primula.glitch.me"
 local LINKVERTISE_URL = "https://link-hub.net/1054419/pfhjcPm4gZj2"
 local LOOTLABS_URL = "https://lootdest.org/s?XYP0BKme"
 
@@ -293,6 +293,9 @@ submitBtn.MouseButton1Click:Connect(function()
         expiryTimestamp = tonumber(data.expires)
     elseif data.status == "expired" then
         notify("❌ Key Expired")
+        return
+    elseif data.status == "used" then
+        notify("❌ Key Already Used")
         return
     else
         notify("❌ Invalid or Expired Key")
